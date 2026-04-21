@@ -48,9 +48,19 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
 
             _url = value;
             OnPropertyChanged();
+
+            ErrorText = null;
+
+            if (string.IsNullOrWhiteSpace(_url))
+            {
+                Image = null;
+                StatusText = null;
+            }
+
             UpdateCommandStates();
         }
     }
+
 
     public BitmapImage? Image
     {
