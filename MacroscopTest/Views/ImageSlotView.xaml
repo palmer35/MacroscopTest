@@ -54,7 +54,7 @@
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                            </TextBlock.Style>
+                        </TextBlock.Style>
                         </TextBlock>
 
                     <ProgressBar Height="8"

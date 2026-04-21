@@ -11,26 +11,38 @@ namespace MacroscopTest.ViewModels;
 /// </summary>
 public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
+    private const int DefaultSlotCount = 3;
+
     private readonly ObservableCollection<ImageSlotViewModel> _slots;
 
     private int _activeLoadsCount;
     private bool _isDisposed;
 
     public MainViewModel()
-        : this(new ImageDownloadService(), new FileLogger())
+        : this(new ImageDownloadService(), new FileLogger(), DefaultSlotCount)
     {
     }
 
     public MainViewModel(ImageDownloadService imageDownloadService, FileLogger logger)
+        : this(imageDownloadService, logger, DefaultSlotCount)
+    {
+    }
+
+    public MainViewModel(ImageDownloadService imageDownloadService, FileLogger logger, int slotCount)
     {
         ArgumentNullException.ThrowIfNull(imageDownloadService);
         ArgumentNullException.ThrowIfNull(logger);
+
+        if (slotCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(slotCount));
+        }
 
         _slots = new ObservableCollection<ImageSlotViewModel>();
         Slots = new ReadOnlyObservableCollection<ImageSlotViewModel>(_slots);
         LoadAllCommand = new AsyncCommand(LoadAllAsync, CanLoadAll);
 
-        CreateSlots(imageDownloadService, logger);
+        CreateSlots(imageDownloadService, logger, slotCount);
         UpdateActiveLoadsCount();
     }
 
@@ -39,6 +51,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public ReadOnlyObservableCollection<ImageSlotViewModel> Slots { get; }
 
     public AsyncCommand LoadAllCommand { get; }
+
+    public int SlotsCount => _slots.Count;
+
+    public string ActiveLoadsSummary => $"{ActiveLoadsCount} / {SlotsCount}";
 
     public int ActiveLoadsCount
     {
@@ -52,6 +68,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
             _activeLoadsCount = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(ActiveLoadsSummary));
         }
     }
 
@@ -72,9 +89,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         await Task.WhenAll(tasks);
     }
 
-    private void CreateSlots(ImageDownloadService imageDownloadService, FileLogger logger)
+    private void CreateSlots(ImageDownloadService imageDownloadService, FileLogger logger, int slotCount)
     {
-        for (var index = 0; index < 3; index++)
+        for (var index = 0; index < slotCount; index++)
         {
             var slot = new ImageSlotViewModel(imageDownloadService, logger);
 
@@ -140,6 +157,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
         _slots.Clear();
         ActiveLoadsCount = 0;
+        OnPropertyChanged(nameof(SlotsCount));
+        OnPropertyChanged(nameof(ActiveLoadsSummary));
         LoadAllCommand.RaiseCanExecuteChanged();
     }
 }
