@@ -7,40 +7,51 @@ namespace MacroscopTest.Services;
 public class ImageDownloadService
 {
     private const int MaxDecodePixelWidth = 2000;
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
 
     private static readonly HttpClient HttpClient = CreateHttpClient();
 
     public virtual async Task<BitmapImage> DownloadAsync(string url, CancellationToken cancellationToken)
     {
         var uri = CreateImageUri(url);
+        using var timeoutCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCancellationTokenSource.CancelAfter(RequestTimeout);
+        var linkedToken = timeoutCancellationTokenSource.Token;
 
         try
         {
             using var response = await HttpClient.GetAsync(
                 uri,
                 HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken).ConfigureAwait(false);
+                linkedToken).ConfigureAwait(false);
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(
+                    $"Image request failed with HTTP {(int)response.StatusCode} ({response.StatusCode}).");
+            }
 
             await using var responseStream = await response.Content
-                .ReadAsStreamAsync(cancellationToken)
+                .ReadAsStreamAsync(linkedToken)
                 .ConfigureAwait(false);
 
             await using var imageStream = response.Content.Headers.ContentLength is { } contentLength and > 0 and <= int.MaxValue
                 ? new MemoryStream((int)contentLength)
                 : new MemoryStream();
 
-            await responseStream.CopyToAsync(imageStream, cancellationToken).ConfigureAwait(false);
+            await responseStream.CopyToAsync(imageStream, linkedToken).ConfigureAwait(false);
 
-            cancellationToken.ThrowIfCancellationRequested();
+            linkedToken.ThrowIfCancellationRequested();
             imageStream.Position = 0;
 
             return CreateBitmapImage(imageStream);
         }
-        catch (HttpRequestException exception)
+        catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested &&
+                                                           timeoutCancellationTokenSource.IsCancellationRequested)
         {
-            throw new InvalidOperationException("Failed to download image.", exception);
+            throw new TimeoutException(
+                $"Image download timed out after {RequestTimeout.TotalSeconds:0} seconds.",
+                exception);
         }
     }
 
