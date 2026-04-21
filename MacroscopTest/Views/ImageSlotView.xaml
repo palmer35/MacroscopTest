@@ -7,19 +7,20 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=viewModels:ImageSlotViewModel, IsDesignTimeCreatable=False}">
     <Border Width="250"
-            Margin="10,0,10,12"
-            Padding="12"
+            Margin="14,6,14,18"
+            Padding="14"
+            Background="White"
             BorderBrush="#D0D7DE"
             BorderThickness="1"
-            CornerRadius="6">
+            CornerRadius="8">
         <StackPanel>
             <Border Height="200"
-                    Margin="0,0,0,10"
-                    Padding="8"
-                    Background="#F6F8FA"
+                    Margin="0,0,0,12"
+                    Padding="10"
+                    Background="#F5F5F5"
                     BorderBrush="#D0D7DE"
                     BorderThickness="1"
-                    CornerRadius="4">
+                    CornerRadius="6">
                 <Grid>
                     <Image Source="{Binding Image}"
                            Stretch="Uniform">
@@ -38,6 +39,7 @@
                     <TextBlock HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                FontWeight="SemiBold"
+                               FontSize="13"
                                Foreground="#6B7280"
                                Text="IMAGE">
                         <TextBlock.Style>
@@ -47,22 +49,41 @@
                                     <DataTrigger Binding="{Binding Image}" Value="{x:Null}">
                                         <Setter Property="Visibility" Value="Visible" />
                                     </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                    <ProgressBar Height="8"
+                                 Margin="16,0"
+                                 VerticalAlignment="Center"
+                                 IsIndeterminate="True"
+                                 Foreground="#9DB7D7">
+                        <ProgressBar.Style>
+                            <Style TargetType="ProgressBar">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ProgressBar.Style>
+                    </ProgressBar>
                 </Grid>
             </Border>
 
-            <Grid Height="32"
-                  Margin="0,0,0,12">
-                <TextBox HorizontalContentAlignment="Left"
-                         VerticalContentAlignment="Center"
+            <Grid Margin="0,0,0,14">
+                <TextBox Style="{StaticResource RoundedTextBoxStyle}"
+                         HorizontalContentAlignment="Left"
                          Text="{Binding Url, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
                 <TextBlock HorizontalAlignment="Center"
                            VerticalAlignment="Center"
-                           Foreground="#666666"
+                           Foreground="#8A8F98"
                            IsHitTestVisible="False"
                            Text="URL">
                     <TextBlock.Style>
@@ -81,13 +102,13 @@
                 </TextBlock>
             </Grid>
 
-            <StackPanel Margin="0,0,0,8">
+            <StackPanel Margin="0,0,0,10">
                 <Button Margin="0,0,0,8"
-                        Padding="12,6"
+                        Style="{StaticResource RoundedButtonStyle}"
                         Command="{Binding LoadCommand}"
                         Content="START" />
 
-                <Button Padding="12,6"
+                <Button Style="{StaticResource RoundedButtonStyle}"
                         Command="{Binding CancelCommand}"
                         Content="STOP" />
             </StackPanel>
@@ -95,8 +116,9 @@
             <TextBlock Margin="0,0,0,4"
                        MinHeight="20"
                        HorizontalAlignment="Center"
+                       FontSize="12"
                        FontWeight="SemiBold"
-                       Foreground="#374151"
+                       Foreground="#6B7280"
                        Text="{Binding StatusText}" />
 
             <TextBlock MinHeight="20"

@@ -1,4 +1,4 @@
-﻿namespace MacroscopTest.Views;
+namespace MacroscopTest.Views;
 
 public partial class ImageSlotView
 {

@@ -10,9 +10,10 @@
         Height="620"
         MinWidth="960"
         MinHeight="620"
+        Background="#FAFAFA"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}">
-    <Grid Margin="16">
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -20,6 +21,7 @@
         </Grid.RowDefinitions>
 
         <ScrollViewer Grid.Row="0"
+                      Margin="0,0,0,20"
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
             <Grid HorizontalAlignment="Center">
@@ -41,21 +43,24 @@
         </ScrollViewer>
 
         <Button Grid.Row="1"
-                Height="36"
-                Margin="10,16,10,12"
-                Padding="12,8"
+                Margin="0,0,0,14"
+                Style="{StaticResource RoundedButtonStyle}"
                 Command="{Binding LoadAllCommand}"
                 Content="LOAD ALL" />
 
         <Grid Grid.Row="2"
-              Height="18"
-              Margin="10,0,10,0">
+              Height="22">
             <ProgressBar Minimum="0"
                          Maximum="3"
+                         Height="22"
+                         Foreground="#A9C3E6"
+                         Background="White"
                          Value="{Binding ActiveLoadsCount, Mode=OneWay}" />
 
             <TextBlock HorizontalAlignment="Center"
                        VerticalAlignment="Center"
+                       FontSize="11"
+                       Foreground="#5B6472"
                        IsHitTestVisible="False"
                        Text="PROGRESS" />
 
@@ -63,6 +68,7 @@
                        VerticalAlignment="Center"
                        FontSize="11"
                        Foreground="#6B7280"
+                       Margin="0,0,8,0"
                        IsHitTestVisible="False"
                        Text="{Binding ActiveLoadsCount, StringFormat={}{0} / 3}" />
         </Grid>
