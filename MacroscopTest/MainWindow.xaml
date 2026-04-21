@@ -1,4 +1,4 @@
-<Window x:Class="MacroscopTest.MainWindow"
+ ```xml<Window x:Class="MacroscopTest.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -10,61 +10,62 @@
         Height="620"
         MinWidth="860"
         MinHeight="560"
+        WindowStartupLocation="CenterScreen"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}">
-    <Grid Margin="16">
+
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="0"
-                      VerticalAlignment="Top"
-                      HorizontalScrollBarVisibility="Disabled"
-                      VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Slots}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel HorizontalAlignment="Center" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
+        <Grid Grid.Row="0"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <views:ImageSlotView />
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+            <views:ImageSlotView Grid.Column="0"
+                                 DataContext="{Binding Slots[0]}" />
+
+            <views:ImageSlotView Grid.Column="1"
+                                 DataContext="{Binding Slots[1]}" />
+
+            <views:ImageSlotView Grid.Column="2"
+                                 DataContext="{Binding Slots[2]}" />
+        </Grid>
 
         <Button Grid.Row="1"
-                Height="36"
-                Margin="10,16,10,12"
+                Margin="10,0,10,12"
                 Padding="12,8"
+                HorizontalAlignment="Stretch"
                 Command="{Binding LoadAllCommand}"
                 Content="LOAD ALL" />
 
         <Grid Grid.Row="2"
-              Height="18"
               Margin="10,0,10,0">
             <ProgressBar Minimum="0"
                          Maximum="3"
+                         Height="24"
+                         VerticalAlignment="Center"
                          Value="{Binding ActiveLoadsCount, Mode=OneWay}" />
 
             <TextBlock HorizontalAlignment="Center"
                        VerticalAlignment="Center"
-                       IsHitTestVisible="False"
+                       FontWeight="SemiBold"
                        Text="PROGRESS" />
 
             <TextBlock HorizontalAlignment="Right"
                        VerticalAlignment="Center"
+                       Margin="0,0,10,0"
                        FontSize="11"
                        Foreground="#6B7280"
-                       IsHitTestVisible="False"
                        Text="{Binding ActiveLoadsCount, StringFormat={}{0} / 3}" />
         </Grid>
     </Grid>
 </Window>
-
-
