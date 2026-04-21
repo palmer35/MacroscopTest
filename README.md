@@ -1,6 +1,6 @@
 # MacroscopTest
 
-Небольшое WPF-приложение для загрузки изображений по URL в 3 независимых слота.
+WPF desktop application that loads images by URL with async operations and cancellation support.
 
 ## Описание
 
