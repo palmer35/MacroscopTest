@@ -1,55 +1,55 @@
 # MacroscopTest
 
-WPF desktop application that loads images by URL with async operations and cancellation support.
+WPF application for loading images by URL with async operations and cancellation support.
 
-## Описание
+## Overview
 
-Приложение позволяет:
-- загрузить изображение в каждый слот отдельно;
-- остановить любую активную загрузку;
-- запустить загрузку всех слотов одной кнопкой;
-- видеть общий progress bar по количеству активных загрузок.
+The application allows:
+- loading images into three independent slots;
+- cancelling any active download;
+- starting all downloads at once;
+- tracking the number of active downloads via a progress bar.
 
-Во время загрузки UI остаётся отзывчивым.
+The UI remains responsive during all operations.
 
-## Возможности
+## Features
 
-- 3 независимых слота для изображений;
-- отдельное поле URL для каждого слота;
-- кнопки `START` / `STOP` для каждого слота;
-- кнопка `LOAD ALL`;
-- общий progress bar со значением от `0` до `3`;
-- отдельные статусы и ошибки по каждому слоту;
-- простое логирование в папку `Logs`.
+- 3 independent image slots
+- separate URL input for each slot
+- `START` / `STOP` buttons per slot
+- `LOAD ALL` button
+- shared progress bar (0–3 active downloads)
+- individual status and error handling per slot
+- simple file logging (`Logs` folder)
 
-## Архитектура
+## Architecture
 
-Проект сделан в простом MVVM-стиле.
+The project follows MVVM architecture.
 
-- `MainViewModel` отвечает за экран целиком, список слотов и общий progress.
-- `ImageSlotViewModel` хранит состояние одного слота: URL, картинку, статус, ошибку и команды.
-- `ImageDownloadService` загружает изображение по ссылке и создаёт `BitmapImage`.
-- `FileLogger` пишет события и ошибки в файл.
-- `AsyncCommand` и `DelegateCommand` используются для команд.
+- `MainViewModel` manages the overall screen and progress
+- `ImageSlotViewModel` handles a single slot state and commands
+- `ImageDownloadService` downloads images and creates `BitmapImage`
+- `FileLogger` writes logs to file
+- `AsyncCommand` and `DelegateCommand` handle user actions
 
-## Особенности реализации
+## Implementation Details
 
-- загрузка работает через `async/await`, без блокировки UI;
-- у каждого слота свой `CancellationTokenSource`;
-- отмена работает независимо для каждого изображения;
-- `LOAD ALL` запускает доступные загрузки параллельно;
-- есть защита от устаревшего результата: отменённая или старая операция не должна перезаписать новую;
-- изображение создаётся через `BitmapImage` с `OnLoad` и `Freeze()`;
-- для больших изображений ограничен размер декодирования, чтобы снизить нагрузку на память.
+- uses `async/await` without blocking UI
+- each slot has its own `CancellationTokenSource`
+- cancellation works independently per slot
+- `LOAD ALL` runs downloads in parallel
+- prevents outdated results from overriding current state
+- images are created with `BitmapImage` (`OnLoad`, `Freeze()`)
+- large images are downscaled to reduce memory usage
 
-## Как запустить
+## How to Run
 
-1. Открыть `MacroscopTest.sln` в Visual Studio 2022.
-2. Убедиться, что установлен .NET 6 SDK.
-3. Выбрать проект `MacroscopTest` как Startup Project.
-4. Запустить приложение.
+1. Open `MacroscopTest.sln` in Visual Studio 2022
+2. Make sure .NET 6 SDK is installed
+3. Set `MacroscopTest` as startup project
+4. Run the application
 
-## Стек
+## Tech Stack
 
 - C#
 - .NET 6
@@ -59,7 +59,7 @@ WPF desktop application that loads images by URL with async operations and cance
 - CancellationToken
 - MSTest
 
-## Дополнительно
+## Notes
 
-- Логи пишутся в папку `Logs` рядом с приложением.
-- Минимальные тесты находятся в проекте `MacroscopTest.Tests`.
+- Logs are written to the `Logs` folder next to the application
+- Unit tests are located in `MacroscopTest.Tests`
