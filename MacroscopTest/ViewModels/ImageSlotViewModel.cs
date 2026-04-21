@@ -51,7 +51,7 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
 
             ErrorText = null;
 
-            if (string.IsNullOrWhiteSpace(_url))
+            if (!IsValidUrl(_url))
             {
                 Image = null;
                 StatusText = null;
@@ -60,6 +60,7 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
             UpdateCommandStates();
         }
     }
+
 
 
     public BitmapImage? Image
