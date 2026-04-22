@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewModels="clr-namespace:MacroscopTest.ViewModels"
         xmlns:views="clr-namespace:MacroscopTest.Views"
-        Title="Macroscop Test"
+        Title="MacroscopTest"
         Width="960"
         Height="620"
         MinWidth="960"
