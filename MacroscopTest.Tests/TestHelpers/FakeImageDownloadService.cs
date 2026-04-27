@@ -1,4 +1,3 @@
-using System.IO;
 using System.Windows.Media.Imaging;
 using MacroscopTest.Services;
 
@@ -15,30 +14,36 @@ internal sealed class FakeImageDownloadService : ImageDownloadService
         68, 174, 66, 96, 130
     };
 
-    public Func<string, CancellationToken, Task<BitmapImage>>? OnDownloadAsync { get; set; }
+    public Func<string, CancellationToken, Task<DownloadedImage>>? OnDownloadAsync { get; set; }
 
-    public override Task<BitmapImage> DownloadAsync(string url, CancellationToken cancellationToken)
+    public Func<string, CancellationToken, IProgress<double>?, Task<DownloadedImage>>? OnDownloadWithProgressAsync { get; set; }
+
+    public override Task<DownloadedImage> DownloadAsync(
+        string url,
+        CancellationToken cancellationToken,
+        IProgress<double>? progress = null)
     {
+        if (OnDownloadWithProgressAsync is not null)
+        {
+            return OnDownloadWithProgressAsync(url, cancellationToken, progress);
+        }
+
         // ReSharper disable once ConvertIfStatementToReturnStatement
         if (OnDownloadAsync is not null)
         {
             return OnDownloadAsync(url, cancellationToken);
         }
 
-        return Task.FromResult(CreateImage());
+        return Task.FromResult(CreateDownloadedImage());
+    }
+
+    public static DownloadedImage CreateDownloadedImage()
+    {
+        return new DownloadedImage(CreateImage(), OnePixelPng.ToArray());
     }
 
     public static BitmapImage CreateImage()
     {
-        using var stream = new MemoryStream(OnePixelPng);
-        var image = new BitmapImage();
-
-        image.BeginInit();
-        image.CacheOption = BitmapCacheOption.OnLoad;
-        image.StreamSource = stream;
-        image.EndInit();
-        image.Freeze();
-
-        return image;
+        return ImageDownloadService.CreateBitmapImage(OnePixelPng);
     }
 }

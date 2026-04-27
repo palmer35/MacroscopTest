@@ -13,5 +13,9 @@
     <Folder Include="Views\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="Resources\images\zoom.png" />
+  </ItemGroup>
+
 </Project>
 

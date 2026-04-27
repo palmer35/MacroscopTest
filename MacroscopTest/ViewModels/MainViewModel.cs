@@ -16,6 +16,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private readonly ObservableCollection<ImageSlotViewModel> _slots;
 
     private int _activeLoadsCount;
+    private double _overallDownloadProgress;
     private bool _isDisposed;
 
     public MainViewModel()
@@ -44,6 +45,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
         CreateSlots(imageDownloadService, logger, slotCount);
         UpdateActiveLoadsCount();
+        UpdateOverallDownloadProgress();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -54,7 +56,23 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public int SlotsCount => _slots.Count;
 
-    public string ActiveLoadsSummary => $"{ActiveLoadsCount} / {SlotsCount}";
+    public string ProgressSummary => $"{OverallDownloadProgress:0}% - Loading: {ActiveLoadsCount} of {SlotsCount}";
+
+    public double OverallDownloadProgress
+    {
+        get => _overallDownloadProgress;
+        private set
+        {
+            if (Math.Abs(_overallDownloadProgress - value) < 0.01)
+            {
+                return;
+            }
+
+            _overallDownloadProgress = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ProgressSummary));
+        }
+    }
 
     public int ActiveLoadsCount
     {
@@ -68,7 +86,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
             _activeLoadsCount = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(ActiveLoadsSummary));
+            OnPropertyChanged(nameof(ProgressSummary));
         }
     }
 
@@ -77,16 +95,21 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         return !_isDisposed && HasLoadableSlots();
     }
 
-    private async Task LoadAllAsync()
+    private Task LoadAllAsync()
     {
-        var tasks = (from slot in _slots where slot.LoadCommand.CanExecute(null) select slot.LoadCommand.ExecuteAsync()).ToList();
-
-        if (tasks.Count == 0)
+        foreach (var slot in _slots)
         {
-            return;
+            if (!CanStartLoading(slot))
+            {
+                continue;
+            }
+
+            _ = slot.LoadCommand.ExecuteAsync();
         }
 
-        await Task.WhenAll(tasks);
+        LoadAllCommand.RaiseCanExecuteChanged();
+
+        return Task.CompletedTask;
     }
 
     private void CreateSlots(ImageDownloadService imageDownloadService, FileLogger logger, int slotCount)
@@ -102,7 +125,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     private bool HasLoadableSlots()
     {
-        return _slots.Any(slot => slot.LoadCommand.CanExecute(null));
+        return _slots.Any(CanStartLoading);
+    }
+
+    private static bool CanStartLoading(ImageSlotViewModel slot)
+    {
+        return !slot.IsLoading && !string.IsNullOrWhiteSpace(slot.Url);
     }
 
     private void UpdateActiveLoadsCount()
@@ -112,11 +140,43 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         ActiveLoadsCount = count;
     }
 
+    private void UpdateOverallDownloadProgress()
+    {
+        double totalProgress = 0;
+        var count = 0;
+
+        foreach (var slot in _slots)
+        {
+            if (!IsProgressParticipant(slot))
+            {
+                continue;
+            }
+
+            totalProgress += slot.DownloadProgress;
+            count++;
+        }
+
+        OverallDownloadProgress = count == 0 ? 0 : totalProgress / count;
+    }
+
+    private static bool IsProgressParticipant(ImageSlotViewModel slot)
+    {
+        return slot.IsLoading || slot.Image is not null;
+    }
+
     private void OnSlotPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(ImageSlotViewModel.IsLoading))
         {
             UpdateActiveLoadsCount();
+        }
+
+        if (e.PropertyName is nameof(ImageSlotViewModel.IsLoading) or
+            nameof(ImageSlotViewModel.Image) or
+            nameof(ImageSlotViewModel.DownloadProgress) or
+            nameof(ImageSlotViewModel.Url))
+        {
+            UpdateOverallDownloadProgress();
         }
 
         if (e.PropertyName is nameof(ImageSlotViewModel.IsLoading) or nameof(ImageSlotViewModel.Url))
@@ -157,8 +217,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
         _slots.Clear();
         ActiveLoadsCount = 0;
+        OverallDownloadProgress = 0;
         OnPropertyChanged(nameof(SlotsCount));
-        OnPropertyChanged(nameof(ActiveLoadsSummary));
+        OnPropertyChanged(nameof(ProgressSummary));
         LoadAllCommand.RaiseCanExecuteChanged();
     }
 }

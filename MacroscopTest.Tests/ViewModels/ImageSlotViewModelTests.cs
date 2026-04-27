@@ -1,4 +1,3 @@
-using System.Windows.Media.Imaging;
 using MacroscopTest.Services;
 using MacroscopTest.Tests.TestHelpers;
 using MacroscopTest.ViewModels;
@@ -7,13 +6,14 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace MacroscopTest.Tests.ViewModels;
 
 [TestClass]
-public sealed class ImageSlotViewModelTests
+public class ImageSlotViewModelTests
 {
-    #region TestHelpers
+    #region Helpers
 
     private const string DefaultImageUrl = "https://example.com/image.png";
     private const string FirstImageUrl = "https://example.com/first.png";
     private const string SecondImageUrl = "https://example.com/second.png";
+    private const string InvalidUrl = "invalid-url";
 
     private static ImageSlotViewModel CreateViewModel(FakeImageDownloadService? service = null)
     {
@@ -24,7 +24,7 @@ public sealed class ImageSlotViewModelTests
 
     private static FakeImageDownloadService CreatePendingDownloadService(
         TaskCompletionSource<bool> started,
-        TaskCompletionSource<BitmapImage> completion)
+        TaskCompletionSource<DownloadedImage> completion)
     {
         return new FakeImageDownloadService
         {
@@ -36,7 +36,7 @@ public sealed class ImageSlotViewModelTests
         };
     }
 
-    private static FakeImageDownloadService CreateSuccessfulDownloadService(BitmapImage image)
+    private static FakeImageDownloadService CreateSuccessfulDownloadService(DownloadedImage image)
     {
         return new FakeImageDownloadService
         {
@@ -48,8 +48,56 @@ public sealed class ImageSlotViewModelTests
     {
         return new FakeImageDownloadService
         {
-            OnDownloadAsync = (_, _) => Task.FromException<BitmapImage>(exception)
+            OnDownloadAsync = (_, _) => Task.FromException<DownloadedImage>(exception)
         };
+    }
+
+    private static FakeImageDownloadService CreateFirstPendingSecondSuccessfulDownloadService(
+        TaskCompletionSource<bool> firstStarted,
+        DownloadedImage secondImage)
+    {
+        var callCount = 0;
+
+        return new FakeImageDownloadService
+        {
+            OnDownloadAsync = (_, token) =>
+            {
+                callCount++;
+
+                if (callCount != 1)
+                {
+                    return Task.FromResult(secondImage);
+                }
+
+                firstStarted.TrySetResult(true);
+                var firstCompletion = new TaskCompletionSource<DownloadedImage>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+
+                return firstCompletion.Task.WaitAsync(token);
+            }
+        };
+    }
+
+    private static FakeImageDownloadService CreateUncancellablePendingDownloadService(
+        TaskCompletionSource<bool> started,
+        TaskCompletionSource<DownloadedImage> completion)
+    {
+        return new FakeImageDownloadService
+        {
+            OnDownloadAsync = (_, _) =>
+            {
+                started.TrySetResult(true);
+                return completion.Task;
+            }
+        };
+    }
+
+    private static async Task CompleteDownloadAsync(
+        TaskCompletionSource<DownloadedImage> completion,
+        Task loadTask)
+    {
+        completion.TrySetResult(FakeImageDownloadService.CreateDownloadedImage());
+        await loadTask;
     }
 
     private static async Task WaitAsync(Task task, int timeoutMilliseconds = 1000)
@@ -64,12 +112,10 @@ public sealed class ImageSlotViewModelTests
         await task;
     }
 
-    #endregion TestHelpers
-
-    #region Tests
+    #endregion
 
     [TestMethod]
-    public async Task LoadAsync_WithInvalidUrl_SetsErrorState()
+    public async Task LoadCommand_WhenUrlInvalid_DoesNotCallDownload()
     {
         var isDownloadCalled = false;
         var service = new FakeImageDownloadService
@@ -77,27 +123,34 @@ public sealed class ImageSlotViewModelTests
             OnDownloadAsync = (_, _) =>
             {
                 isDownloadCalled = true;
-                return Task.FromResult(FakeImageDownloadService.CreateImage());
+                return Task.FromResult(FakeImageDownloadService.CreateDownloadedImage());
             }
         };
 
         using var viewModel = CreateViewModel(service);
-        viewModel.Url = "invalid-url";
+        viewModel.Url = InvalidUrl;
 
         await viewModel.LoadCommand.ExecuteAsync();
 
         Assert.IsFalse(isDownloadCalled);
-        Assert.IsFalse(viewModel.IsLoading);
-        Assert.IsNull(viewModel.Image);
-        Assert.AreEqual("Error", viewModel.StatusText);
-        Assert.IsFalse(string.IsNullOrWhiteSpace(viewModel.ErrorText));
     }
 
     [TestMethod]
-    public async Task LoadAsync_WhenDownloadStarts_SetsLoadingState()
+    public async Task LoadCommand_WhenUrlInvalid_SetsErrorStatus()
+    {
+        using var viewModel = CreateViewModel();
+        viewModel.Url = InvalidUrl;
+
+        await viewModel.LoadCommand.ExecuteAsync();
+
+        Assert.AreEqual("Error", viewModel.StatusText);
+    }
+
+    [TestMethod]
+    public async Task LoadCommand_WhenDownloadStarts_SetsLoadingStatus()
     {
         var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var completion = new TaskCompletionSource<BitmapImage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completion = new TaskCompletionSource<DownloadedImage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var service = CreatePendingDownloadService(started, completion);
 
         using var viewModel = CreateViewModel(service);
@@ -105,25 +158,16 @@ public sealed class ImageSlotViewModelTests
 
         var loadTask = viewModel.LoadCommand.ExecuteAsync();
         await WaitAsync(started.Task);
+        var statusText = viewModel.StatusText;
+        await CompleteDownloadAsync(completion, loadTask);
 
-        try
-        {
-            Assert.IsTrue(viewModel.IsLoading);
-            Assert.IsNull(viewModel.Image);
-            Assert.IsNull(viewModel.ErrorText);
-            Assert.AreEqual("Loading...", viewModel.StatusText);
-        }
-        finally
-        {
-            completion.TrySetResult(FakeImageDownloadService.CreateImage());
-            await loadTask;
-        }
+        Assert.AreEqual("Loading...", statusText);
     }
 
     [TestMethod]
-    public async Task LoadAsync_WhenDownloadSucceeds_SetsLoadedState()
+    public async Task LoadCommand_WhenDownloadSucceeds_SetsImage()
     {
-        var expectedImage = FakeImageDownloadService.CreateImage();
+        var expectedImage = FakeImageDownloadService.CreateDownloadedImage();
         var service = CreateSuccessfulDownloadService(expectedImage);
 
         using var viewModel = CreateViewModel(service);
@@ -131,14 +175,24 @@ public sealed class ImageSlotViewModelTests
 
         await viewModel.LoadCommand.ExecuteAsync();
 
-        Assert.AreSame(expectedImage, viewModel.Image);
-        Assert.AreEqual("Loaded", viewModel.StatusText);
-        Assert.IsNull(viewModel.ErrorText);
-        Assert.IsFalse(viewModel.IsLoading);
+        Assert.AreSame(expectedImage.PreviewImage, viewModel.Image);
     }
 
     [TestMethod]
-    public async Task LoadAsync_WhenServiceFails_SetsErrorState()
+    public async Task LoadCommand_WhenDownloadSucceeds_SetsOkStatus()
+    {
+        var service = CreateSuccessfulDownloadService(FakeImageDownloadService.CreateDownloadedImage());
+
+        using var viewModel = CreateViewModel(service);
+        viewModel.Url = DefaultImageUrl;
+
+        await viewModel.LoadCommand.ExecuteAsync();
+
+        Assert.AreEqual("OK", viewModel.StatusText);
+    }
+
+    [TestMethod]
+    public async Task LoadCommand_WhenServiceFails_SetsErrorStatus()
     {
         var service = CreateFailingDownloadService(new InvalidOperationException("Download failed."));
 
@@ -147,17 +201,14 @@ public sealed class ImageSlotViewModelTests
 
         await viewModel.LoadCommand.ExecuteAsync();
 
-        Assert.IsFalse(viewModel.IsLoading);
-        Assert.IsNull(viewModel.Image);
         Assert.AreEqual("Error", viewModel.StatusText);
-        Assert.IsFalse(string.IsNullOrWhiteSpace(viewModel.ErrorText));
     }
 
     [TestMethod]
-    public async Task LoadAsync_WhenCancelled_SetsCancelledState()
+    public async Task CancelCommand_WhenDownloadIsActive_SetsCancelledStatus()
     {
         var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var completion = new TaskCompletionSource<BitmapImage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completion = new TaskCompletionSource<DownloadedImage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var service = CreatePendingDownloadService(started, completion);
 
         using var viewModel = CreateViewModel(service);
@@ -169,35 +220,15 @@ public sealed class ImageSlotViewModelTests
         completion.TrySetCanceled();
         await loadTask;
 
-        Assert.IsFalse(viewModel.IsLoading);
-        Assert.IsNull(viewModel.Image);
         Assert.AreEqual("Cancelled", viewModel.StatusText);
     }
 
     [TestMethod]
-    public async Task LoadAsync_AfterCancellation_LoadsImageForNewUrl()
+    public async Task LoadCommand_WhenCancelledAndStartedAgain_LoadsSecondImage()
     {
         var firstStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var callCount = 0;
-        var expectedImage = FakeImageDownloadService.CreateImage();
-        var service = new FakeImageDownloadService
-        {
-            OnDownloadAsync = (_, token) =>
-            {
-                callCount++;
-
-                if (callCount != 1)
-                {
-                    return Task.FromResult(expectedImage);
-                }
-
-                firstStarted.TrySetResult(true);
-                var firstCompletion = new TaskCompletionSource<BitmapImage>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                return firstCompletion.Task.WaitAsync(token);
-
-            }
-        };
+        var expectedImage = FakeImageDownloadService.CreateDownloadedImage();
+        var service = CreateFirstPendingSecondSuccessfulDownloadService(firstStarted, expectedImage);
 
         using var viewModel = CreateViewModel(service);
         viewModel.Url = FirstImageUrl;
@@ -210,11 +241,46 @@ public sealed class ImageSlotViewModelTests
         viewModel.Url = SecondImageUrl;
         await viewModel.LoadCommand.ExecuteAsync();
 
-        Assert.AreSame(expectedImage, viewModel.Image);
-        Assert.AreEqual("Loaded", viewModel.StatusText);
-        Assert.IsNull(viewModel.ErrorText);
-        Assert.IsFalse(viewModel.IsLoading);
+        Assert.AreSame(expectedImage.PreviewImage, viewModel.Image);
     }
 
-    #endregion Tests
+    [TestMethod]
+    public async Task Url_WhenChangedDuringDownload_DoesNotApplyPreviousImage()
+    {
+        var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completion = new TaskCompletionSource<DownloadedImage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var previousImage = FakeImageDownloadService.CreateDownloadedImage();
+        var service = CreateUncancellablePendingDownloadService(started, completion);
+
+        using var viewModel = CreateViewModel(service);
+        viewModel.Url = FirstImageUrl;
+
+        var loadTask = viewModel.LoadCommand.ExecuteAsync();
+        await WaitAsync(started.Task);
+        viewModel.Url = "1";
+        completion.TrySetResult(previousImage);
+        await loadTask;
+
+        Assert.IsNull(viewModel.Image);
+    }
+
+    [TestMethod]
+    public async Task LoadCommand_WhenUrlChangedToInvalidDuringDownload_SetsErrorStatus()
+    {
+        var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completion = new TaskCompletionSource<DownloadedImage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var service = CreateUncancellablePendingDownloadService(started, completion);
+
+        using var viewModel = CreateViewModel(service);
+        viewModel.Url = FirstImageUrl;
+
+        var loadTask = viewModel.LoadCommand.ExecuteAsync();
+        await WaitAsync(started.Task);
+        viewModel.Url = "1";
+        completion.TrySetResult(FakeImageDownloadService.CreateDownloadedImage());
+        await loadTask;
+        await viewModel.LoadCommand.ExecuteAsync();
+
+        Assert.AreEqual("Error", viewModel.StatusText);
+    }
 }

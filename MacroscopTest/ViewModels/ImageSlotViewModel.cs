@@ -18,6 +18,8 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
     private bool _isLoading;
     private string? _statusText;
     private string? _errorText;
+    private byte[]? _imageBytes;
+    private double _downloadProgress;
     private CancellationTokenSource? _currentCancellationTokenSource;
     private int _currentOperationId;
     private bool _isDisposed;
@@ -50,10 +52,18 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
             OnPropertyChanged();
 
             ErrorText = null;
+            var wasLoading = IsLoading;
 
-            if (!IsValidUrl(_url))
+            if (wasLoading)
+            {
+                CancelCurrentDownloadForUrlChange();
+            }
+
+            if (wasLoading || !IsValidUrl(_url))
             {
                 Image = null;
+                ImageBytes = null;
+                DownloadProgress = 0;
                 StatusText = null;
             }
 
@@ -123,6 +133,38 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    public byte[]? ImageBytes
+    {
+        get => _imageBytes;
+        private set
+        {
+            if (ReferenceEquals(_imageBytes, value))
+            {
+                return;
+            }
+
+            _imageBytes = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public double DownloadProgress
+    {
+        get => _downloadProgress;
+        private set
+        {
+            var progress = Math.Clamp(value, 0, 100);
+
+            if (Math.Abs(_downloadProgress - progress) < 0.01)
+            {
+                return;
+            }
+
+            _downloadProgress = progress;
+            OnPropertyChanged();
+        }
+    }
+
     public AsyncCommand LoadCommand { get; }
 
     public ICommand CancelCommand => _cancelCommand;
@@ -148,6 +190,9 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
 
         if (!IsValidUrl(currentUrl))
         {
+            Image = null;
+            ImageBytes = null;
+            DownloadProgress = 0;
             ErrorText = "Invalid URL.";
             StatusText = "Error";
             _logger.LogError($"Invalid image URL: {formattedUrl}");
@@ -162,6 +207,8 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
         _currentCancellationTokenSource = cancellationTokenSource;
         IsLoading = true;
         Image = null;
+        ImageBytes = null;
+        DownloadProgress = 0;
         ErrorText = null;
         StatusText = "Loading...";
         _logger.LogInfo($"Image download started. URL: {formattedUrl}");
@@ -169,7 +216,18 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
 
         try
         {
-            var downloadedImage = await _imageDownloadService.DownloadAsync(currentUrl, cancellationTokenSource.Token);
+            var progress = new Progress<double>(value =>
+            {
+                if (IsCurrentOperation(operationId))
+                {
+                    DownloadProgress = Math.Max(DownloadProgress, value);
+                }
+            });
+
+            var downloadedImage = await _imageDownloadService.DownloadAsync(
+                currentUrl,
+                cancellationTokenSource.Token,
+                progress);
 
             if (cancellationTokenSource.IsCancellationRequested ||
                 !IsCurrentOperation(operationId, cancellationTokenSource))
@@ -177,12 +235,19 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
                 return;
             }
 
-            Image = downloadedImage;
-            StatusText = "Loaded";
+            Image = downloadedImage.PreviewImage;
+            ImageBytes = downloadedImage.Bytes;
+            DownloadProgress = 100;
+            StatusText = "OK";
             _logger.LogInfo($"Image downloaded successfully. URL: {formattedUrl}");
         }
         catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
         {
+            if (IsCurrentOperation(operationId, cancellationTokenSource))
+            {
+                DownloadProgress = 0;
+            }
+
             _logger.LogInfo($"Image download cancelled. URL: {formattedUrl}");
         }
         catch (Exception exception)
@@ -193,6 +258,7 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
             }
 
             ErrorText = "Failed to load the image. Please check the URL.";
+            DownloadProgress = 0;
             StatusText = "Error";
             _logger.LogError($"Image download failed. URL: {formattedUrl}", exception);
         }
@@ -223,10 +289,37 @@ public sealed class ImageSlotViewModel : INotifyPropertyChanged, IDisposable
         UpdateCommandStates();
     }
 
+    private void CancelCurrentDownloadForUrlChange()
+    {
+        var cancellationTokenSource = _currentCancellationTokenSource;
+
+        if (cancellationTokenSource is null)
+        {
+            return;
+        }
+
+        _currentOperationId = unchecked(_currentOperationId + 1);
+        _currentCancellationTokenSource = null;
+
+        if (!cancellationTokenSource.IsCancellationRequested)
+        {
+            cancellationTokenSource.Cancel();
+        }
+
+        IsLoading = false;
+    }
+
     private bool IsCurrentOperation(int operationId, CancellationTokenSource cancellationTokenSource)
     {
         return operationId == _currentOperationId &&
                ReferenceEquals(_currentCancellationTokenSource, cancellationTokenSource);
+    }
+
+    private bool IsCurrentOperation(int operationId)
+    {
+        return operationId == _currentOperationId &&
+               _currentCancellationTokenSource is not null &&
+               !_currentCancellationTokenSource.IsCancellationRequested;
     }
 
     private void UpdateCommandStates()

@@ -1,4 +1,4 @@
-﻿using MacroscopTest.ViewModels;
+using MacroscopTest.ViewModels;
 
 namespace MacroscopTest;
 

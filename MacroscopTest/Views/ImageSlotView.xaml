@@ -6,24 +6,69 @@
              xmlns:viewModels="clr-namespace:MacroscopTest.ViewModels"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=viewModels:ImageSlotViewModel, IsDesignTimeCreatable=False}">
-    <Border Width="250"
-            Margin="14,6,14,18"
-            Padding="14"
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MacroscopTest;component/Views/Styles/ImageSlotResources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border Margin="10,4,10,12"
+            Padding="12"
             Background="White"
             BorderBrush="#D0D7DE"
             BorderThickness="1"
-            CornerRadius="8">
-        <StackPanel>
-            <Border Height="200"
-                    Margin="0,0,0,12"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            CornerRadius="8"
+            MouseLeftButtonDown="OnContainerMouseLeftButtonDown">
+        <Grid Background="Transparent">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"
+                               MinHeight="188" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    x:Name="ImageContainerBorder"
+                    Margin="0,0,0,10"
                     Padding="10"
                     Background="#F5F5F5"
                     BorderBrush="#D0D7DE"
                     BorderThickness="1"
                     CornerRadius="6">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="BorderBrush" Value="#D0D7DE" />
+                        <Setter Property="Background" Value="#F5F5F5" />
+                        <Setter Property="BorderThickness" Value="1" />
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" Value="#4F81BD" />
+                                <Setter Property="BorderThickness" Value="2" />
+                                <Setter Property="Background" Value="#DCEEFF" />
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="10"
+                                                          ShadowDepth="0"
+                                                          Opacity="0.35"
+                                                          Color="#5C86B3" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Grid>
-                    <Image Source="{Binding Image}"
-                           Stretch="Uniform">
+                    <Image x:Name="SlotImage"
+                           Source="{Binding Image}"
+                           Stretch="Uniform"
+                           Cursor="Hand"
+                           ToolTip="Double-click to open">
                         <Image.Style>
                             <Style TargetType="Image">
                                 <Setter Property="Opacity" Value="1" />
@@ -35,6 +80,13 @@
                             </Style>
                         </Image.Style>
                     </Image>
+
+                    <Button HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Margin="0,0,4,0"
+                            Style="{StaticResource ZoomOverlayButtonStyle}"
+                            Click="OnOpenPreviewClick"
+                            ToolTip="Open image" />
 
                     <TextBlock HorizontalAlignment="Center"
                                VerticalAlignment="Center"
@@ -55,28 +107,12 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
-                        </TextBlock>
-
-                    <ProgressBar Height="8"
-                                 Margin="16,0"
-                                 VerticalAlignment="Center"
-                                 IsIndeterminate="True"
-                                 Foreground="#9DB7D7">
-                        <ProgressBar.Style>
-                            <Style TargetType="ProgressBar">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsLoading}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ProgressBar.Style>
-                    </ProgressBar>
+                    </TextBlock>
                 </Grid>
             </Border>
 
-            <Grid Margin="0,0,0,14">
+            <Grid Grid.Row="1"
+                  Margin="0,0,0,12">
                 <TextBox Style="{StaticResource RoundedTextBoxStyle}"
                          HorizontalContentAlignment="Left"
                          Text="{Binding Url, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
@@ -102,7 +138,8 @@
                 </TextBlock>
             </Grid>
 
-            <StackPanel Margin="0,0,0,10">
+            <StackPanel Grid.Row="2"
+                        Margin="0,0,0,8">
                 <Button Margin="0,0,0,8"
                         Style="{StaticResource RoundedButtonStyle}"
                         Command="{Binding LoadCommand}"
@@ -113,19 +150,34 @@
                         Content="STOP" />
             </StackPanel>
 
-            <TextBlock Margin="0,0,0,4"
+            <TextBlock Grid.Row="3"
+                       Margin="0,0,0,4"
                        MinHeight="20"
                        HorizontalAlignment="Center"
                        FontSize="12"
                        FontWeight="SemiBold"
-                       Foreground="#6B7280"
-                       Text="{Binding StatusText}" />
+                       Text="{Binding StatusText}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="#6B7280" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding StatusText}" Value="OK">
+                                <Setter Property="Foreground" Value="#2E7D32" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding StatusText}" Value="Error">
+                                <Setter Property="Foreground" Value="#C62828" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
 
-            <TextBlock MinHeight="20"
+            <TextBlock Grid.Row="4"
+                       MinHeight="20"
                        Foreground="#C62828"
                        Text="{Binding ErrorText}"
                        TextAlignment="Center"
                        TextWrapping="Wrap" />
-        </StackPanel>
+        </Grid>
     </Border>
 </UserControl>
