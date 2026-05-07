@@ -6,13 +6,13 @@
         Height="720"
         MinWidth="640"
         MinHeight="480"
-        Background="#1F2328"
+        Background="{DynamicResource WindowBackgroundBrush}"
         WindowStartupLocation="CenterOwner"
         Loaded="OnLoaded">
     <DockPanel>
         <Border DockPanel.Dock="Top"
                 Padding="10,8"
-                Background="#2D333B">
+                Background="{DynamicResource CardBackgroundBrush}">
             <StackPanel Orientation="Horizontal">
                 <Button Width="110"
                         Margin="0,0,8,0"
@@ -40,13 +40,13 @@
 
                 <TextBlock x:Name="StatusTextBlock"
                            VerticalAlignment="Center"
-                           Foreground="#D0D7DE"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
                            Text="Loading..." />
             </StackPanel>
         </Border>
 
         <ScrollViewer x:Name="ImageScrollViewer"
-                      Background="#1F2328"
+                      Background="{DynamicResource WindowBackgroundBrush}"
                       HorizontalScrollBarVisibility="Disabled"
                       PreviewMouseLeftButtonDown="OnImageScrollViewerPreviewMouseLeftButtonDown"
                       PreviewMouseLeftButtonUp="OnImageScrollViewerPreviewMouseLeftButtonUp"

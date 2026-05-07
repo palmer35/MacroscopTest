@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FAFAFA" />
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ControlHoverBackgroundBrush" Color="#F7FBFF" />
+    <SolidColorBrush x:Key="ControlPressedBackgroundBrush" Color="#E7F1FC" />
+    <SolidColorBrush x:Key="ImageAreaBackgroundBrush" Color="#F5F5F5" />
+    <SolidColorBrush x:Key="ImageAreaHoverBackgroundBrush" Color="#DCEEFF" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#D0D7DE" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#4F81BD" />
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="#35699E" />
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#374151" />
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#6B7280" />
+    <SolidColorBrush x:Key="MutedTextBrush" Color="#8A8F98" />
+    <SolidColorBrush x:Key="ProgressForegroundBrush" Color="#A9C3E6" />
+    <SolidColorBrush x:Key="SuccessTextBrush" Color="#2E7D32" />
+    <SolidColorBrush x:Key="ErrorTextBrush" Color="#C62828" />
+    <SolidColorBrush x:Key="ZoomIconBrush" Color="#374151" />
+    <SolidColorBrush x:Key="ZoomIconStrokeBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ZoomButtonBackgroundBrush" Color="#B3262C34" />
+    <SolidColorBrush x:Key="ZoomButtonHoverBackgroundBrush" Color="#CC1F2328" />
+    <SolidColorBrush x:Key="ZoomButtonPressedBackgroundBrush" Color="#E6191F26" />
+    <SolidColorBrush x:Key="ZoomButtonBorderBrush" Color="#E5F9FAFB" />
+    <SolidColorBrush x:Key="ZoomButtonHoverBorderBrush" Color="#FFFFFFFF" />
+    <Color x:Key="ImageHoverShadowColor">#5C86B3</Color>
+</ResourceDictionary>

@@ -16,8 +16,8 @@
 
     <Border Margin="10,4,10,12"
             Padding="12"
-            Background="White"
-            BorderBrush="#D0D7DE"
+            Background="{DynamicResource CardBackgroundBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="1"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
@@ -37,26 +37,26 @@
                     x:Name="ImageContainerBorder"
                     Margin="0,0,0,10"
                     Padding="10"
-                    Background="#F5F5F5"
-                    BorderBrush="#D0D7DE"
+                    Background="{DynamicResource ImageAreaBackgroundBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1"
                     CornerRadius="6">
                 <Border.Style>
                     <Style TargetType="Border">
-                        <Setter Property="BorderBrush" Value="#D0D7DE" />
-                        <Setter Property="Background" Value="#F5F5F5" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                        <Setter Property="Background" Value="{DynamicResource ImageAreaBackgroundBrush}" />
                         <Setter Property="BorderThickness" Value="1" />
                         <Style.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="BorderBrush" Value="#4F81BD" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                                 <Setter Property="BorderThickness" Value="2" />
-                                <Setter Property="Background" Value="#DCEEFF" />
+                                <Setter Property="Background" Value="{DynamicResource ImageAreaHoverBackgroundBrush}" />
                                 <Setter Property="Effect">
                                     <Setter.Value>
                                         <DropShadowEffect BlurRadius="10"
                                                           ShadowDepth="0"
                                                           Opacity="0.35"
-                                                          Color="#5C86B3" />
+                                                          Color="{DynamicResource ImageHoverShadowColor}" />
                                     </Setter.Value>
                                 </Setter>
                             </Trigger>
@@ -76,6 +76,22 @@
                                     <DataTrigger Binding="{Binding IsLoading}" Value="True">
                                         <Setter Property="Opacity" Value="0.5" />
                                     </DataTrigger>
+                                    <DataTrigger Binding="{Binding StatusText}" Value="OK">
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                     From="0"
+                                                                     To="1"
+                                                                     Duration="0:0:0.2">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <QuadraticEase EasingMode="EaseOut" />
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Image.Style>
@@ -92,7 +108,7 @@
                                VerticalAlignment="Center"
                                FontWeight="SemiBold"
                                FontSize="13"
-                               Foreground="#6B7280"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
                                Text="IMAGE">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -119,7 +135,7 @@
 
                 <TextBlock HorizontalAlignment="Center"
                            VerticalAlignment="Center"
-                           Foreground="#8A8F98"
+                           Foreground="{DynamicResource MutedTextBrush}"
                            IsHitTestVisible="False"
                            Text="URL">
                     <TextBlock.Style>
@@ -159,13 +175,13 @@
                        Text="{Binding StatusText}">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
-                        <Setter Property="Foreground" Value="#6B7280" />
+                        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding StatusText}" Value="OK">
-                                <Setter Property="Foreground" Value="#2E7D32" />
+                                <Setter Property="Foreground" Value="{DynamicResource SuccessTextBrush}" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding StatusText}" Value="Error">
-                                <Setter Property="Foreground" Value="#C62828" />
+                                <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -174,7 +190,7 @@
 
             <TextBlock Grid.Row="4"
                        MinHeight="20"
-                       Foreground="#C62828"
+                       Foreground="{DynamicResource ErrorTextBrush}"
                        Text="{Binding ErrorText}"
                        TextAlignment="Center"
                        TextWrapping="Wrap" />
