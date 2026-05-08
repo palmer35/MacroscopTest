@@ -13,6 +13,12 @@
         Background="{DynamicResource WindowBackgroundBrush}"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}">
+    <Window.InputBindings>
+        <KeyBinding Key="L"
+                    Modifiers="Control"
+                    Command="{Binding LoadAllCommand}" />
+    </Window.InputBindings>
+
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -28,11 +34,17 @@
             <TextBlock VerticalAlignment="Center"
                        Margin="0,0,8,0"
                        Foreground="{DynamicResource SecondaryTextBrush}"
-                       Text="Theme" />
-            <Button Width="120"
+                       Text="Theme:" />
+            <TextBlock x:Name="ThemeStatusText"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,0"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource PrimaryTextBrush}" />
+            <Button x:Name="ThemeToggleButton"
+                    Width="140"
                     Style="{StaticResource RoundedButtonStyle}"
                     Click="OnToggleThemeClick"
-                    Content="TOGGLE THEME" />
+                    Content="SWITCH TO DARK" />
         </StackPanel>
 
         <ItemsControl Grid.Row="1"
