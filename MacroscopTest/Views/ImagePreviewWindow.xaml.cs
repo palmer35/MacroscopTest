@@ -109,7 +109,7 @@ public partial class ImagePreviewWindow
 
     private void OnImageScrollViewerPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (!_isActualSize || PreviewImage.Source is null)
+        if (!_isActualSize || PreviewImage.Source is null || !ReferenceEquals(e.OriginalSource, PreviewImage))
         {
             return;
         }
